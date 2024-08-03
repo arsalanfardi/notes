@@ -17,6 +17,10 @@ The same 3 key concepts have existed in Docker since its invention:
 	- `docker run` runs the app in a container
 	- The container runs in a **namespace** that is isolated it from the rest of the operating system (own IP address, process list, etc.)
 
+### Definitions
+- **Image** is the application (binaries, libraries, source code)
+- **Container** is an instance of an image running as a process
+	- Many contains can run the same image
 # 2. Quick Container run
 https://labs.play-with-docker.com/
 
@@ -27,6 +31,7 @@ docker version
 - Docker is a two part system:
 	- Client (CLI): where you type your commands
 	- Server: the docker daemon
+- **Docker Engine** encompasses both of these 
 - Communicate via socket, TCP/TLS or SSH
 
 Run a container with an HTTP server:
