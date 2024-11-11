@@ -120,6 +120,7 @@ NyPizza nyPizza = new NyPizza.Builder(NyPizza.Size.LARGE) .addTopping(Pizza.Topp
 
 # Item 3: Enforce the singleton property with a private constructor or an enum type
 - **Singleton**: class that is instantiated exactly once
+	- Note dependency injection is preferred over singletons
 
 **Public final static member with private constructor**
 - Simple
@@ -176,4 +177,75 @@ public class UtilityClass {
 }
 ```
 
-# Item 5: Enforce noninstantiability with a private constructor
+# Item 5: Prefer dependency injection to hardwiring resources
+- Static utility classes and singletons are inappropriate for classes whose behavior is parameterized by an underlying resource
+- Instead, we should pass the resource which needs to be parameterized into the constructor when creating a new instance, this is one form of **dependency injection**
+	- This is relevant for static factories and builders too
+
+```Java
+public class SpellChecker {
+	private final Lexicon dictionary;
+
+	public SpellChecker(Lexicon dictionary) {
+		this.dictionary = Objects.requireNonNull(dictionary);
+	}
+
+	public boolean isValid(String word) { ... }
+} 
+```
+- We can also pass in a special dictionary for testing
+
+- Another useful variant is passing a resource factory to the constructor
+	- This will likely be a Supplier with a *bounded wildcard type*
+
+```Java
+Mosaic create(Supplier<? extends Tile> tileFactory) { ... }
+
+create(MarbleTileFactory::new)
+```
+
+### Limitations
+- All parameters will need to be passed down the entire call stack, which can mean a lot of changes and expanded argument lists
+# Item 6: Avoid creating unnecessary objects
+- Objects can always be reused if they're immutable (and sometimes even if mutable and you know they won't be modified), and this is often faster and more stylish
+- You can often avoid creating unnecessary objects by using static factory methods since a constructor **must** create a new object each time (e.g. `Boolean.valueOf(String)` vs. `Boolean(String)` - which is since deprecated)
+
+- You should also **cache** expensive objects
+	- Below, `String.matches` creates a new Pattern instance each time (an expensive action), which is then cleaned up by GC
+```Java
+/**
+ * Inefficient version of isRomanNumeral that uses String.matches.
+ * Each call recompiles the regular expression, which is unnecessary.
+ */
+public static boolean isRomanNumeral(String s) {
+	return s.matches("^(?i)(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$");
+}
+```
+- Instead it can be compiled into a single reusable instance
+```Java
+public class RomanNumeralChecker {
+    // Reusable Pattern object for improved performance
+    private static final Pattern ROMAN = Pattern.compile(
+            "^(?i)(M{0,3})(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$");
+
+    public static boolean isRomanNumeral(String s) {
+        return ROMAN.matcher(s).matches();
+    }
+}
+```
+
+- Beware of creating unnecessary objects due to **autoboxing**
+	- Prefer to use primitives over boxed primitives and watch out for unintentional autoboxing
+```Java
+private static long sum() {
+	// Declaring Long hear results in autoboxing below,
+	// creating 2^31 unnecessary Long instances!
+	Long sum = 0L;
+	for (long i = 0; i < Integer.MAX_VALUE; i++) {
+		sum += i;  // Autoboxing happens here on each iteration
+	}
+	
+	return sum;
+}
+```
+
