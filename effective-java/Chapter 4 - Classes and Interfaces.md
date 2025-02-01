@@ -40,10 +40,43 @@
 2. Prevent subclassing
 	- Prevents careless or malicious subclasses from bypassing immutability
 	-  Do this by making the class final or making the constructor private
-1. Make all fields final
-2. Make all fields private
+```Java
+public class ImmutableParent {
+    private final String value;
+
+    public ImmutableParent(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return value;
+    }
+}
+
+public class MutableChild extends ImmutableParent {
+    private String mutableValue;
+
+    public MutableChild(String value, String mutableValue) {
+        super(value);
+        this.mutableValue = mutableValue;
+    }
+
+    // Add a mutable field with a setter
+    public void setMutableValue(String mutableValue) {
+        this.mutableValue = mutableValue;
+    }
+
+    @Override
+    public String getValue() {
+        // Simulates mutability of parent class
+        return mutableValue;
+    }
+}
+```
+3. Make all fields final
+4. Make all fields private
 	- Prevents clients from accessing references to mutable objects
-3. Ensure exclusive access to any mutable components
+5. Ensure exclusive access to any mutable components
 	- For any fields that refer to mutable objects, ensure clients cannot access them and that they are not directly returned from an accessor. Make defensive copies where necessary.
 
 - Here's an example of an immutable class:
@@ -74,4 +107,66 @@ public static final Complex ZERO = new Complex(0, 0);
 - Immutable objects are always atomic, so there is no possibility of temporary inconsistency
 - Great building blocks for other objects - e.g. can serve as map keys since you don't have to worry about values changing 
 
+- The major **disadvantage** is that they require separate objects for each distinct value
+	- Consider providing a companion class (package-private or public, like `StringBuilder` for `String`)
 
+### Preventing subclassing
+- Using a private or package-private constructor is more flexible than making a class final because:
+	- Classes in the same package (package-private) or nested inner classes (private) can still extend the class
+	- It is still effectively final to classes outside of its package
+- Instead use public static factory methods
+
+### Summary
+- Technically no method in an immutable class can produce an *externally* visible change in the object's state, but it can use nonfinal fields to aid with things like caching expensive computations
+- Classes should be immutable unless there's a very good reason otherwise
+	- Particularly for small value classes (`PhoneNumber` or `Complex`)
+	- Or limit immutability as much as possible
+- Relating to item 15, declare every field private final unless there's a good reason otherwise
+- Constructors should create fully initialized objects with invariants established
+
+# Item 18: Favor composition over inheritance
+- Inheritance is generally safe to use when in the same package and under control of the same programmers, however it can become problematic with public classes
+- Inheritance **violates encapsulation**, but method invocation does
+- Subclass depends on superclass implementation
+	- Changes to superclass may break the subclass, despite the fact subclass has no direct changes
+	- Needlessly exposes implementation details
+- **Composition**: Superclass becomes a *component* of the new class
+	- **Forwarding**: your new class can invoke the "superclass" methods (AKA *Wrapper* or *Decorator* design pattern)
+	- Also relates to dependency injection
+
+- Inheritance should only be used when "**is-a**" relation holds true (B is an A)
+	- Otherwise, B is merely an implementation detail of A
+- In summary: inheritance shouldn't necessarily be your default choice for code re-use
+
+# Item 19: Design and document for inheritance or else prohibit it
+- Don't call an overridable method from your constructor - can result in `NullPointerExceptions`
+
+# Item 20: Prefer interfaces to abstract classes
+- Classes can only extend one abstract class but multiple interfaces
+```Java
+public interface Singer {
+    void sing();
+}
+
+public interface Songwriter {
+    void compose(String songTitle);
+}
+
+public interface SingerSongwriter extends Singer, Songwriter {
+    void perform(String songTitle);
+}
+```
+- Interfaces are ideal for **mixins**, i.e. types that a class can implement in addition to primary type
+	- Optional functionality is "mixed-in" to the type's primary functionality
+	- Think `Comparable` interface
+- Since Java 8, *default* methods were introduced for interfaces which allow you to provide implementations for instance methods
+# Item 21: Design interfaces for posterity
+- Need to be careful to not break existing implementation if adding a default method 
+
+# Item 22: Use interfaces only to define types
+- Don't use interfaces to define constants, interfaces should represent a contract or a type that classes implement, not a collection of constants
+# Item 23: Prefer class hierarchies to tagged classes
+- A **tagged** class contains a field that indicates its type subtype
+# Item 24: Favour static member classes over nonstatic
+
+# Item 25: Limit source files to a single top-level class
